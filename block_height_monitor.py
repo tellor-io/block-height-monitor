@@ -1,7 +1,10 @@
 import time
 import os
 from web3 import Web3
+from discordwebhook import Discord
 from dotenv import load_dotenv
+
+alert_bot = Discord(url="https://discord.com/api/webhooks/1151146220308418610/I_AobBJR2bdWLtkPU_acP9CWjZfNQqOarFc31yKP1l-THlz7xwyRDpjTV7pRsWUUKOM7")
 
 load_dotenv()
 
@@ -25,12 +28,13 @@ def block_height_monitor(primary, secondary):
             print(f"Secondary node highest block: {secondary_block_number}")
         except Exception as e:
             print("ERROR REACHING SECONDARY NODE: {e}")
-        if abs(primary_block_number-secondary_block_number) < 2:
+        if abs(primary_block_number-18121108) < 2:
             print("Node is all good.")
             while True:
                 time.sleep(30)
                 block_height_monitor(primary, secondary)
         else:
-            print("NODE IS OUT OF SYNC!")
+            alert_bot.post(content="YOUR NODE IS OUT OF SYNC!")
+            print("NODE IS OUT OF SYNC! ALERT SENT")
 
 block_height_monitor(primary, secondary)
