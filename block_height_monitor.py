@@ -28,7 +28,7 @@ def block_height_monitor(primary, secondary):
             print(f"Secondary node highest block: {secondary_block_number}")
         except Exception as e:
             print("ERROR REACHING SECONDARY NODE: {e}")
-        if abs(primary_block_number-18121108) < 2:
+        if abs(primary_block_number-secondary_block_number) < 2:
             print("Node is all good.")
             while True:
                 time.sleep(30)
