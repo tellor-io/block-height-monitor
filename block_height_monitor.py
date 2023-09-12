@@ -4,14 +4,14 @@ from web3 import Web3
 from discordwebhook import Discord
 from dotenv import load_dotenv
 
-alert_bot = Discord(url="https://discord.com/api/webhooks/1151146220308418610/I_AobBJR2bdWLtkPU_acP9CWjZfNQqOarFc31yKP1l-THlz7xwyRDpjTV7pRsWUUKOM7")
-
 load_dotenv()
 
 PRIMARY_NODE_ENDPOINT = os.getenv("PRIMARY_NODE_ENDPOINT")
 SECONDARY_NODE_ENDPOINT = os.getenv("SECONDARY_NODE_ENDPOINT")
-INTERVAL = os.getenv("INTERVAL")
+INTERVAL = int(os.getenv("INTERVAL"))
+DISCORD_WEBHOOK_URL = os.getenv("DISCORD_WEBHOOK_URL")
 
+alert_bot = Discord(url="DISCORD_WEBHOOK_URL")
 primary = Web3(Web3.HTTPProvider(PRIMARY_NODE_ENDPOINT))
 secondary = Web3(Web3.HTTPProvider(SECONDARY_NODE_ENDPOINT))
 
@@ -31,7 +31,7 @@ def block_height_monitor(primary, secondary):
         if abs(primary_block_number-secondary_block_number) < 2:
             print("Node is all good.")
             while True:
-                time.sleep(30)
+                time.sleep(INTERVAL)
                 block_height_monitor(primary, secondary)
         else:
             alert_bot.post(content="YOUR NODE IS OUT OF SYNC!")
