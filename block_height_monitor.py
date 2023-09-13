@@ -62,7 +62,7 @@ def get_secondary_block(secondary):
         return 2
     
 while True:
-    if get_primary_block == get_secondary_block(secondary):
+    if get_primary_block(primary) == get_secondary_block(secondary):
         logging.info("Node is all good. \U0001F60E")
         time.sleep(INTERVAL)
         alarms = 0
