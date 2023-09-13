@@ -35,14 +35,17 @@ logging.getLogger('').addHandler(console_handler)
 logger.addHandler(file_handler)
 logger.addHandler(console_handler)
 
+#read variables from .env
 DISCORD_WEBHOOK_URL = os.getenv("DISCORD_WEBHOOK_URL")
 PRIMARY_NODE_ENDPOINT = os.getenv("PRIMARY_NODE_ENDPOINT")
 SECONDARY_NODE_ENDPOINT = os.getenv("SECONDARY_NODE_ENDPOINT")
 INTERVAL = int(os.getenv("INTERVAL"))
 
+#set variables
 alert_bot = Discord(url=DISCORD_WEBHOOK_URL)
 primary = Web3(Web3.HTTPProvider(PRIMARY_NODE_ENDPOINT))
 secondary = Web3(Web3.HTTPProvider(SECONDARY_NODE_ENDPOINT))
+alerts = 0
 
 def get_primary_block(primary):
     try:
@@ -59,18 +62,23 @@ def get_secondary_block(secondary):
         return 2
     
 while True:
-    if get_primary_block(primary) == get_secondary_block(secondary):
+    if 18128252 == get_secondary_block(secondary):
         logging.info("Node is all good. \U0001F60E")
         time.sleep(INTERVAL)
     elif get_primary_block(primary) == 1:
         logging.info("Error getting the block number. Trying again in 60s...")
-        alert_bot.post(content="Primary node could not be reached.")
+        #alert_bot.post(content="Primary node could not be reached.")
         time.sleep(60)
     elif get_secondary_block(secondary) == 2:
         logging.info("Secondary node cannot be reached. Trying again in 60s...")
-        alert_bot.post(content="Secondary node could not be reached.")
+        #alert_bot.post(content="Secondary node could not be reached.")
         time.sleep(30)
     else:
-        alert_bot.post(content="\U0001F6A8 NODE IS OUT OF SYNC! \U0001F6A8")
+        #alert_bot.post(content="\U0001F6A8 NODE IS OUT OF SYNC! \U0001F6A8")
         logging.info("NODES MAY BE OUT OF SYNC! \U0001F6A8 ALERT SENT!")
-        time.sleep(60)
+        alerts += 1
+        if alerts > 3:
+            print("node is drunk send shutdown signal")
+            time.sleep(3600)
+        else:
+            time.sleep(300)
