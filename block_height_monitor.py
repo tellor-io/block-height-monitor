@@ -62,7 +62,7 @@ def get_secondary_block(secondary):
         return 2
     
 while True:
-    if 18128252 == get_secondary_block(secondary):
+    if get_primary_block == get_secondary_block(secondary):
         logging.info("Node is all good. \U0001F60E")
         time.sleep(INTERVAL)
     elif get_primary_block(primary) == 1:
@@ -77,8 +77,8 @@ while True:
         #alert_bot.post(content="\U0001F6A8 NODE IS OUT OF SYNC! \U0001F6A8")
         logging.info("NODES MAY BE OUT OF SYNC! \U0001F6A8 ALERT SENT!")
         alerts += 1
-        if alerts > 3:
+        if alerts > 5:
             print("node is drunk send shutdown signal")
             time.sleep(3600)
         else:
-            time.sleep(300)
+            time.sleep(60)
