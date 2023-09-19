@@ -29,7 +29,7 @@ pip install -e .
 ### Usage
 Add your rpc and webhook urls to `.env` file. Update the `INTERVAL` to your desired frequency.
 
-**To begin tipping**
+**To begin monitoring block height**
 ```sh
-python3 block_height_monitor.py
+monitor
 ```
