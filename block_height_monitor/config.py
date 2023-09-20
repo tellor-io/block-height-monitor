@@ -1,1 +1,1 @@
-interval = 7
+interval = 60 #the interval between checks (seconds)

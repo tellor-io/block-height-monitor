@@ -50,11 +50,10 @@ SECONDARY_NODE_ENDPOINT = os.getenv("SECONDARY_NODE_ENDPOINT")
 interval = config.interval
 
 # set variables
-alert_bot = Discord(url=DISCORD_WEBHOOK_URL)
 primary = Web3(Web3.HTTPProvider(PRIMARY_NODE_ENDPOINT))
 secondary = Web3(Web3.HTTPProvider(SECONDARY_NODE_ENDPOINT))
 
-
+#get block number from Primary node
 def get_primary_block(primary: Web3) -> Union[BlockNumber, None]:
     try:
         primary_block_number = primary.eth.block_number
@@ -63,7 +62,7 @@ def get_primary_block(primary: Web3) -> Union[BlockNumber, None]:
     except Exception:
         return None
 
-
+#get block number from Secondary node
 def get_secondary_block(secondary: Web3) -> Union[BlockNumber, None]:
     try:
         secondary_block_number = secondary.eth.block_number
@@ -72,31 +71,27 @@ def get_secondary_block(secondary: Web3) -> Union[BlockNumber, None]:
     except Exception:
         return None
 
-
+# set variables for main script
+primary_block_number = get_primary_block(primary)
+secondary_block_number = get_secondary_block(secondary)
 alarms = 0
+alert_bot = Discord(url=DISCORD_WEBHOOK_URL)
 
-
+#the main script
 def main() -> int:
     while True:
-        if get_primary_block(primary) == get_secondary_block(secondary):
+        if  primary_block_number == secondary_block_number and primary_block_number is not None:
             alarms = 0
-            logging.info("Node is all good. \U0001F60E")
+            logging.info(f"Node is all good at block: {primary_block_number}")
             time.sleep(interval)
-        elif get_primary_block(primary) == None:
-            logging.info("Primary node could not be reached. Trying again in 60s...")
-            alert_bot.post(content="Primary node could not be reached.")
-            time.sleep(60)
-        elif get_secondary_block(secondary) == None:
-            logging.info("Secondary node could not be reached. Trying again in 60s...")
-            alert_bot.post(content="Secondary node could not be reached.")
-            time.sleep(60)
+            return primary_block_number
         else:
             alarms = alarms + 1
-            alert_bot.post(content="\U0001F6A8 NODE IS OUT OF SYNC! \U0001F6A8")
+            alert_bot.post(content="\U0001F6A8 CHECK NODE SYNC STATUS! \U0001F6A8")
             logging.info("NODES MAY BE OUT OF SYNC! \U0001F6A8 ALERT SENT!")
             if alarms > 5:
-                logging.info("node is drunk send shutdown signal")
-                # alert_bot.post(content="Node shutdown signal sent. Switch to backup nodes now!")
+                logging.info("Node is still drunk after 5 attempts. Sending shutdown signal!")
+                #alert_bot.post(content="Node shutdown signal sent. Switch to backup nodes now!")
                 time.sleep(3600)
             else:
                 time.sleep(60)
