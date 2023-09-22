@@ -1,6 +1,6 @@
 # Block Height Monitor
 
-This is a simple script that monitors the current block height of two ethereum nodes. The bot will send an alert (discord message) if the two nodes' current block numbers don't match.
+This is a simple script / bot that compares the web3 BlockNumber of two different nodes. The bot will send an alert (discord message) if the two nodes' block numbers don't match, or if one of the nodes is catching up. 
 
 ### Clone repo and cd
 ```sh
