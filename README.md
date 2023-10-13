@@ -4,7 +4,7 @@ This is a simple script / bot that compares the web3 BlockNumber of two differen
 
 ### Clone repo and cd
 ```sh
-git clone https://github.com/0xSpuddy/block-height-monitor
+git clone https://github.com/tellor-io/block-height-monitor
 ```
 ```sh
 cd block-height-monitor
