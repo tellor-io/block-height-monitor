@@ -1,8 +1,7 @@
+import asyncio
 import logging
 import os
-import time
 from typing import Union
-import asyncio
 
 from discordwebhook import Discord
 from dotenv import load_dotenv
@@ -51,23 +50,23 @@ secondary = Web3(Web3.HTTPProvider(SECONDARY_NODE_ENDPOINT))
 
 
 # get block number from Primary node
-async def get_primary_block(primary: Web3) -> Union[BlockNumber, None]:
+async def get_primary_block(primary: Web3) -> Union[BlockNumber]:
     try:
         primary_block_number = primary.eth.block_number
         logging.info(f"Primary node highest block: {primary_block_number}")
         return primary_block_number
-    except Exception:
-        return None
+    except Exception as e:
+        raise ValueError(f"Invalid response from primary node {e}")
 
 
 # get block number from Secondary node
-async def get_secondary_block(secondary: Web3) -> Union[BlockNumber, None]:
+async def get_secondary_block(secondary: Web3) -> Union[BlockNumber]:
     try:
         secondary_block_number = secondary.eth.block_number
         logging.info(f"Secondary node highest block: {secondary_block_number}")
         return secondary_block_number
-    except Exception:
-        return None
+    except Exception as e:
+        raise ValueError(f"Invalid response from secondary node {e}")
 
 
 # the main script
@@ -75,11 +74,22 @@ async def main() -> None:
     primary_block_number = await get_primary_block(primary)
     secondary_block_number = await get_secondary_block(secondary)
     alert_bot = Discord(url=DISCORD_WEBHOOK_URL)
-    if primary_block_number == secondary_block_number and primary_block_number is not None:
-            logging.info("Node is all good bro \U00002705")
+
+    if primary_block_number == secondary_block_number:
+        logging.info("Node is all synced up \U00002705")
+        alert_bot.post(content="Node is all synced up \U00002705")
+
+    elif primary_block_number < secondary_block_number:
+        sync_percentage = (primary_block_number / secondary_block_number) * 100
+        truncated_sync_percentage = float(f"{sync_percentage:.2f}")
+        logging.info("\U0001F6A8 NODE IS SYNCING? \U0001F6A8")
+        logging.info(f"Node is {truncated_sync_percentage}% synced")
+        alert_bot.post(content=f"\U0001F6A8 NODE IS SYNCING? {truncated_sync_percentage}% synced")
+
     else:
-            logging.info("\U0001F6A8 CHECK NODE SYNC STATUS! \U0001F6A8")
-            alert_bot.post(content="\U0001F6A8 CHECK NODE SYNC STATUS! \U0001F6A8")
+        logging.info("Broken :( Check nodes or setup.")
+        alert_bot.post(content="Broken :( Check nodes or setup.")
+
 
 if __name__ == "__main__":
     asyncio.run(main())
