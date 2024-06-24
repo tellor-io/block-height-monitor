@@ -16,6 +16,6 @@ setup(
     packages=find_packages(),
     install_requires=read_requirements(),
     entry_points={
-        "console_scripts": ["monitor=block_height_monitor.monitor:main"],
+        "console_scripts": ["monitor=block_height_monitor.check_node:__main__"],
     },
 )
