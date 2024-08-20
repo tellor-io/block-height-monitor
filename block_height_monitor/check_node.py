@@ -52,42 +52,54 @@ timeout = 10  # Timeout in seconds
 CHECK_INTERVAL = int(os.getenv("CHECK_INTERVAL", 60))
 
 # set Web3 variables
-primary = Web3(Web3.HTTPProvider(PRIMARY_NODE_ENDPOINT, request_kwargs={"timeout": timeout}))
-secondary = Web3(Web3.HTTPProvider(SECONDARY_NODE_ENDPOINT, request_kwargs={"timeout": timeout}))
+# primary = Web3(Web3.HTTPProvider(PRIMARY_NODE_ENDPOINT, request_kwargs={"timeout": timeout}))
+# secondary = Web3(Web3.HTTPProvider(SECONDARY_NODE_ENDPOINT, request_kwargs={"timeout": timeout}))
 
 
 # get block number from Primary node
-async def get_primary_block(primary: Web3) -> Union[BlockNumber]:
+async def get_primary_block() -> Union[None, BlockNumber]:
     try:
+        primary = Web3(Web3.HTTPProvider(PRIMARY_NODE_ENDPOINT, request_kwargs={"timeout": timeout}))
         primary_block_number = primary.eth.get_block_number()
         logging.info(f"Primary node highest block: {primary_block_number}")
         return primary_block_number
-
     except Exception as e:
-        raise ValueError(f"Invalid response from primary node {e}")
+        logging.error(f"Failed to connect to Primary node: {e}")
+        alert_bot = Discord(url=DISCORD_WEBHOOK_URL)
+        alert_bot.post(content=f"Failed to connect to Primary node: {e}")
+        return None
 
 
 # get block number from Secondary node
-async def get_secondary_block(secondary: Web3) -> Union[BlockNumber]:
+async def get_secondary_block() -> Union[None, BlockNumber]:
     try:
+        secondary = Web3(Web3.HTTPProvider(SECONDARY_NODE_ENDPOINT, request_kwargs={"timeout": timeout}))
         secondary_block_number = secondary.eth.get_block_number()
         logging.info(f"Secondary node highest block: {secondary_block_number}")
         return secondary_block_number
-
     except Exception as e:
-        raise ValueError(f"Invalid response from secondary node {e}")
+        logging.error(f"Failed to connect to Secondary node: {e}")
+        alert_bot = Discord(url=DISCORD_WEBHOOK_URL)
+        alert_bot.post(content=f"Failed to connect to Secondary node: {e}")
+        return None
 
 
 # the main script
 async def check_node() -> None:
+    """queries the nodes and sends alerts if something is off"""
     try:
-        primary_block_number = await get_primary_block(primary)
-        secondary_block_number = await get_secondary_block(secondary)
         alert_bot = Discord(url=DISCORD_WEBHOOK_URL)
+
+        primary_block_number = await get_primary_block()
+        if primary_block_number is None:
+            return
+
+        secondary_block_number = await get_secondary_block()
+        if secondary_block_number is None:
+            return
 
         if primary_block_number == secondary_block_number:
             logging.info("Node is all synced up \U00002705")
-            alert_bot.post(content="Node is all synced up \U00002705")
             return
 
         elif primary_block_number < secondary_block_number:
@@ -102,14 +114,17 @@ async def check_node() -> None:
             logging.info("Node maintenance required? \U0001FAE0")
             alert_bot.post(content="Node maintenance required? \U0001FAE0")
             return
-    except ValueError as e:
-        logging.error(f"Error: {e}")
+    except Exception as e:
+        logging.error(f"Bot is broken?(everything's broken?): {e}")
+        alert_bot = Discord(url=DISCORD_WEBHOOK_URL)
+        alert_bot.post(content=f"Bot is broken?(everything's broken? {e}")
+        return None
 
 
-
-async def main():
+async def main()-> None:
     while True:
         await check_node()
         await asyncio.sleep(CHECK_INTERVAL)
+
 
 asyncio.run(main())
