@@ -1,9 +1,11 @@
 import asyncio
 import logging
 import os
+import time
 import tracemalloc
-from typing import Union
+from typing import Optional, Union
 
+import requests
 from discordwebhook import Discord
 from dotenv import load_dotenv
 from eth_typing.evm import BlockNumber
@@ -51,17 +53,31 @@ timeout = 10  # Timeout in seconds
 # Get the interval from the .env file
 CHECK_INTERVAL = int(os.getenv("CHECK_INTERVAL", 60))
 
-# set Web3 variables
-# primary = Web3(Web3.HTTPProvider(PRIMARY_NODE_ENDPOINT, request_kwargs={"timeout": timeout}))
-# secondary = Web3(Web3.HTTPProvider(SECONDARY_NODE_ENDPOINT, request_kwargs={"timeout": timeout}))
+# Create persistent HTTP sessions for connection reuse
+primary_session = requests.Session()
+primary_session.headers.update({'Content-Type': 'application/json'})
+secondary_session = requests.Session()
+secondary_session.headers.update({'Content-Type': 'application/json'})
 
+# Create Web3 instances once and reuse them (with persistent sessions)
+primary = Web3(Web3.HTTPProvider(
+    PRIMARY_NODE_ENDPOINT, 
+    request_kwargs={"timeout": timeout},
+    session=primary_session
+))
+secondary = Web3(Web3.HTTPProvider(
+    SECONDARY_NODE_ENDPOINT, 
+    request_kwargs={"timeout": timeout},
+    session=secondary_session
+))
 
 # get block number from Primary node
-async def get_primary_block() -> Union[None, BlockNumber]:
+async def get_primary_block() -> Optional[BlockNumber]:
     try:
-        primary = Web3(Web3.HTTPProvider(PRIMARY_NODE_ENDPOINT, request_kwargs={"timeout": timeout}))
+        start_time = time.time()
         primary_block_number = primary.eth.get_block_number()
-        logging.info(f"Primary node highest block: {primary_block_number}")
+        response_time = time.time() - start_time
+        logging.info(f"Primary node highest block: {primary_block_number} (response time: {response_time:.3f}s)")
         return primary_block_number
     except Exception as e:
         logging.error(f"Failed to connect to Primary node: {e}")
@@ -71,11 +87,12 @@ async def get_primary_block() -> Union[None, BlockNumber]:
 
 
 # get block number from Secondary node
-async def get_secondary_block() -> Union[None, BlockNumber]:
+async def get_secondary_block() -> Optional[BlockNumber]:
     try:
-        secondary = Web3(Web3.HTTPProvider(SECONDARY_NODE_ENDPOINT, request_kwargs={"timeout": timeout}))
+        start_time = time.time()
         secondary_block_number = secondary.eth.get_block_number()
-        logging.info(f"Secondary node highest block: {secondary_block_number}")
+        response_time = time.time() - start_time
+        logging.info(f"Secondary node highest block: {secondary_block_number} (response time: {response_time:.3f}s)")
         return secondary_block_number
     except Exception as e:
         logging.error(f"Failed to connect to Secondary node: {e}")
@@ -98,22 +115,23 @@ async def check_node() -> None:
         if secondary_block_number is None:
             return
 
-        if primary_block_number == secondary_block_number:
-            logging.info("Node is all synced up \U00002705")
+        block_diff = abs(primary_block_number - secondary_block_number)
+        
+        if block_diff <= 10:
+            logging.info(f"Node is synced (block difference: {block_diff}) ✅")
             return
 
-        elif primary_block_number < secondary_block_number:
-            sync_percentage = (primary_block_number / secondary_block_number) * 100
-            truncated_sync_percentage = float(f"{sync_percentage:.2f}")
-            logging.info("\U0001F6A8 Node is SYNCING (presumably) \U0001F6A8")
-            logging.info(f"Node is {truncated_sync_percentage}% synced")
-            alert_bot.post(content=f"\U0001F6A8 NODE IS SYNCING? {truncated_sync_percentage}% synced")
+        elif block_diff > 10:
+            logging.info(f"\U0001F6A8 Node heights are different \U0001F6A8")
+            logging.info(f"Primary node: {primary_block_number}, Secondary node: {secondary_block_number}")
+            alert_bot.post(content=f"\U0001F6A8 Node heights are different. Primary: {primary_block_number}, Secondary: {secondary_block_number}")
             return
 
         else:
-            logging.info("Node maintenance required? \U0001FAE0")
-            alert_bot.post(content="Node maintenance required? \U0001FAE0")
+            logging.info("Bot may be broken.\U0001FAE0")
+            alert_bot.post(content="Bot may be broken.\U0001FAE0")
             return
+
     except Exception as e:
         logging.error(f"Bot is broken?(everything's broken?): {e}")
         alert_bot = Discord(url=DISCORD_WEBHOOK_URL)
