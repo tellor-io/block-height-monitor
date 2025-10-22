@@ -1,8 +1,8 @@
 # Block Height Monitor
 
-This is a simple script / bot that compares the web3 BlockNumber of two different nodes. The bot will send an alert (discord message) if the two nodes' block numbers don't match, or if one of the nodes is catching up. 
+This is a simple script / bot that compares the web3 BlockNumber of two different nodes. The bot will send an alerts (discord messages) if various conditions are met relating to the health of the node and their RPCs.
 
-### Clone repo and cd
+### Setup
 ```sh
 git clone https://github.com/tellor-io/block-height-monitor
 ```
@@ -12,20 +12,15 @@ cd block-height-monitor
 ```sh
 mv .env.example .env
 ```
-
-### Setup
-
 ```sh
-python3 -m venv venv
+python3 -m venv env
 ```
 ```sh
-source venv/bin/activate
+source env/bin/activate
 ```
-
 ```sh
 pip install -e .
 ```
-
 ### Usage
 Add your rpc and webhook urls to `.env` file. Update the `INTERVAL` to your desired frequency.
 
